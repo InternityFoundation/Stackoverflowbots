@@ -1,11 +1,13 @@
 package in.internity
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import in.internity.datasource.SaveConfigurationsDB
 import in.internity.http.RestService
-import in.internity.stackoverflow.{Fetch, QuestionsActor}
+import in.internity.stackoverflow.{CallHeroku, Fetch, QuestionsActor}
 import in.internity.twitter.TwitterCommunicator
+import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContextExecutor
@@ -27,12 +29,15 @@ object Boot extends App {
   bind.onComplete(a => println(a.get))
   SaveConfigurationsDB.init()
   SaveConfigurationsDB.getAll().map { conf =>
-    val twitterCommunicator = new TwitterCommunicator(conf.twitterApi)
+    val twitterCommunicator = new TwitterCommunicator(conf.twitterApi,Http())
     val questionsActor = actorSystem.actorOf(QuestionsActor.props(questionsURL, authKey, twitterCommunicator))
     val latestTS = Math.max(TimeCache.getLatestTime(conf.tag), conf.lastTimestamp)
     TimeCache.updateTimeAndTag(conf.tag, latestTS)
-    actorSystem.scheduler.schedule(500 millis, 5000 milli) {
+    actorSystem.scheduler.schedule(500 millis,1 minute) {
       questionsActor ! Fetch(conf.tag, TimeCache.getLatestTime(conf.tag))
+    }
+    actorSystem.scheduler.schedule(500 millis,10 minute) {
+      questionsActor ! CallHeroku
     }
   }
 }
@@ -40,7 +45,7 @@ object Boot extends App {
 object TimeCache {
   private val tagAndTime = mutable.Map[String, Double]()
 
-  def getLatestTime(tag: String): Double = tagAndTime.getOrElse(tag, 1515247849)
+  def getLatestTime(tag: String): Double = tagAndTime.getOrElse(tag, new DateTime(DateTimeZone.UTC).withTimeAtStartOfDay().getMillis / 1000)
 
   def updateTimeAndTag(tag: String, time: Double) = tagAndTime.update(tag, time)
 }

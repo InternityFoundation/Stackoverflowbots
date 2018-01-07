@@ -59,11 +59,11 @@ object RestService {
         post {
           decodeRequest {
             entity(as[TwitterApi]) { twitterApi: TwitterApi =>
-              val twitterHandler = new TwitterCommunicator(twitterApi)
+              val twitterHandler = new TwitterCommunicator(twitterApi,Http())
               val questionsActor = actorSystem.actorOf(QuestionsActor.props(AppConfig.questionsURL, AppConfig.authKey, twitterHandler))
               val latestTimeStamp = TimeCache.getLatestTime(tag)
               SaveConfigurationsDB.save(twitterApi, tag, latestTimeStamp.toLong)
-              actorSystem.scheduler.schedule(500 millis, 5000 milli) {
+              actorSystem.scheduler.schedule(500 millis, 1 minute) {
                 questionsActor ! Fetch(tag, latestTimeStamp)
               }
               complete {

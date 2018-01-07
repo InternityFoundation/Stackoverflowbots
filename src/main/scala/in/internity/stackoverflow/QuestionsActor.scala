@@ -42,15 +42,23 @@ class QuestionsActor(http: HttpExt, soUrl: String, key: String, twitterHandler: 
           }
         }
         a.items.map { question =>
+          println(question.owner)
           if (!listOfQuestions.contains(question.question_id)) {
-            val tweet = twitterHandler.formulateTweet(question)
-            log.info(s"Tweet: $tweet")
-            twitterHandler.sendTweet(tweet)
+            twitterHandler.formulateTweet(question).map{tweet=>
+              log.info(s"Tweet: $tweet")
+              twitterHandler.sendTweet(tweet)
+            }
+
+
             listOfQuestions += question.question_id
           }
         }
       }
 
+    case CallHeroku=>
+      http.singleRequest(HttpRequest(uri = "https://internity-bots.herokuapp.com/")).onComplete({a=>
+        println("Called heroku Responded with:",a.get.status)
+      })
   }
 
   def fetchQuestions(tag: String, fromDate: Double): Future[Questions] = {
@@ -71,7 +79,9 @@ class QuestionsActor(http: HttpExt, soUrl: String, key: String, twitterHandler: 
   private def responseToQuestion(response: HttpResponse): Future[Questions] = {
     response.status match {
       case StatusCodes.OK => Unmarshal(response.entity).to[Questions]
-      case a => Future.failed(new Exception(s"Failed to get Actual response: Status Code :$a"))
+      case a =>
+        log.error(s"Failed to get Actual response: Status Code :$a")
+        Future.failed(new Exception(s"Failed to get Actual response: Status Code :$a"))
     }
   }
 
@@ -96,3 +106,4 @@ object QuestionsActor {
 }
 
 case class Fetch(tag: String, fromDate: Double)
+case object CallHeroku
