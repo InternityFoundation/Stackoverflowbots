@@ -51,7 +51,6 @@ class TwitterCommunicator(twitterApi: TwitterApi, http: HttpExt)(implicit as: Ac
   }
 
   def getTwitterUsername(owner: Owner): Future[String] = {
-    println(s"OwnerLink:${owner.link}")
     val response = http.singleRequest(HttpRequest(uri = owner.link))
     response.flatMap(responseToString).map { str =>
       val username = Try(str.split("https://twitter.com/*")(1).split("\"")(0).replace("@", "")).toOption.getOrElse("")

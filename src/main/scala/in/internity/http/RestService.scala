@@ -45,9 +45,10 @@ object RestService {
       path("") {
         get {
           val listOfRunningBots = SaveConfigurationsDB.getAll().map { a =>
-            s"""${a.tag} --> <a href="https://twitter.com/${a.twitterApi.handler}">${a.twitterApi.handler}</a>"""
-          }.mkString("</br>")
-          val updated = html.split("</body>").mkString(listOfRunningBots + "</body>")
+            s"""${a.tag} --- <a href="https://twitter.com/${a.twitterApi.handler}">${a.twitterApi.handler}</a>"""
+          }.mkString("\n <br> </br>")
+          val updated = html.split("</body>").mkString(listOfRunningBots + "\n </body>")
+          println(s"updated:$updated")
           val resp: Elem = scala.xml.XML.loadString(updated)
           complete(resp)
         }
