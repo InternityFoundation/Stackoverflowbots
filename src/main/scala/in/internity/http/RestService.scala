@@ -67,7 +67,7 @@ object RestService {
                 questionsActor ! Fetch(tag, latestTimeStamp)
               }
               complete {
-                "Order received"
+                "Handler Added"
               }
             }
           }
