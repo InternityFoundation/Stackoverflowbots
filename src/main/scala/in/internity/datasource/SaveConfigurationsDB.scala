@@ -1,7 +1,6 @@
 package in.internity.datasource
 
 import in.internity.models.{Configuration, TwitterApi}
-import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
 
@@ -12,8 +11,6 @@ import scala.util.{Failure, Success, Try}
 object SaveConfigurationsDB {
 
   val connection = Datasource.connectionPool.getConnection
-
-  val log = LoggerFactory.getLogger(this.getClass)
 
   def init() = {
     val stmt = connection.createStatement()

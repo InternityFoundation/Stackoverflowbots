@@ -5,15 +5,12 @@ import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.{ContentTypes, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import com.danielasfregola.twitter4s.TwitterRestClient
-import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import in.internity.models.{Owner, Question, TwitterApi}
 import org.json4s.native.Serialization
 import org.json4s.{DefaultFormats, native}
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 
 /**
@@ -27,13 +24,21 @@ class TwitterCommunicator(twitterApi: TwitterApi, http: HttpExt)(implicit as: Ac
   implicit val formats: DefaultFormats.type = DefaultFormats
   implicit val serialization: Serialization.type = native.Serialization
 
-  val consumerToken = ConsumerToken(key = twitterApi.consumerKey, secret = twitterApi.consumerSecret)
-  val accessToken = AccessToken(key = twitterApi.accessKey, secret = twitterApi.accessSecret)
-  private val restClient = TwitterRestClient(consumerToken, accessToken)
+  import twitter4j.conf.ConfigurationBuilder
+  import twitter4j.{Twitter, TwitterFactory}
+
+  val cb = new ConfigurationBuilder
+  cb.setDebugEnabled(true)
+    .setOAuthConsumerKey(twitterApi.consumerKey)
+    .setOAuthConsumerSecret(twitterApi.consumerSecret)
+    .setOAuthAccessToken(twitterApi.accessKey)
+    .setOAuthAccessTokenSecret(twitterApi.accessSecret)
+  val tf = new TwitterFactory(cb.build)
+  val twitter: Twitter = tf.getInstance
 
   def sendTweet(tweet: String): Unit = {
-    val resultantTweet = restClient.createTweet(tweet)
-    Await.result(resultantTweet, 1000 millis)
+    val resultantTweet = twitter.updateStatus(tweet)
+    println(s"resultantTweet Status:${resultantTweet.getId}")
   }
 
   def formulateTweet(item: Question): Future[String] = {

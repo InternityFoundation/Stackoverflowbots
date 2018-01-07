@@ -1,4 +1,4 @@
-name := "ScalaAtStackOve"
+name := "botsstackoverflow"
 
 version := "0.1"
 
@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.1",
   "com.typesafe.akka" %% "akka-http" % "10.0.10",
   "com.typesafe.akka" %% "akka-http-xml" % "10.0.10",
-  "com.danielasfregola" %% "twitter4s" % "5.4-SNAPSHOT",
+  "org.twitter4j" % "twitter4j-core" % "4.0.6",
   //For json Conversion
   "org.json4s" %% "json4s-native" % "3.5.3",
   "de.heikoseeberger" %% "akka-http-json4s" % "1.11.0",
