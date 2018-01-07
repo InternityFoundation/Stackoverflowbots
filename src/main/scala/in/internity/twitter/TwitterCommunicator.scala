@@ -6,13 +6,14 @@ import akka.http.scaladsl.model.{ContentTypes, HttpRequest, HttpResponse, Status
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import com.danielasfregola.twitter4s.TwitterRestClient
-import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken, Tweet}
+import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import in.internity.models.{Owner, Question, TwitterApi}
 import org.json4s.native.Serialization
 import org.json4s.{DefaultFormats, native}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 
 /**
@@ -30,8 +31,9 @@ class TwitterCommunicator(twitterApi: TwitterApi, http: HttpExt)(implicit as: Ac
   val accessToken = AccessToken(key = twitterApi.accessKey, secret = twitterApi.accessSecret)
   private val restClient = TwitterRestClient(consumerToken, accessToken)
 
-  def sendTweet(tweet: String): Future[Tweet] = {
-    restClient.createTweet(tweet)
+  def sendTweet(tweet: String): Unit = {
+    val tweet = restClient.createTweet(tweet)
+    Await.result(tweet, 1000 millis)
   }
 
   def formulateTweet(item: Question): Future[String] = {
