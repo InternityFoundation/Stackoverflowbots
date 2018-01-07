@@ -32,8 +32,8 @@ class TwitterCommunicator(twitterApi: TwitterApi, http: HttpExt)(implicit as: Ac
   private val restClient = TwitterRestClient(consumerToken, accessToken)
 
   def sendTweet(tweet: String): Unit = {
-    val tweet = restClient.createTweet(tweet)
-    Await.result(tweet, 1000 millis)
+    val resultantTweet = restClient.createTweet(tweet)
+    Await.result(resultantTweet, 1000 millis)
   }
 
   def formulateTweet(item: Question): Future[String] = {
