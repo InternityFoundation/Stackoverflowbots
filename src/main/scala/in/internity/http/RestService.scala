@@ -44,11 +44,7 @@ object RestService {
     val routes =
       path("") {
         get {
-          val listOfRunningBots = SaveConfigurationsDB.getAll().map { a =>
-            s"""${a.tag} --- <a href="https://twitter.com/${a.twitterApi.handler}">${a.twitterApi.handler}</a>"""
-          }.mkString("\n <br> </br>")
-          val updated = html.split("</body>").mkString(listOfRunningBots + "\n </body>")
-          println(s"updated:$updated")
+          val updated: String = getHtmlToBeRendered
           val resp: Elem = scala.xml.XML.loadString(updated)
           complete(resp)
         }
@@ -60,7 +56,7 @@ object RestService {
         post {
           decodeRequest {
             entity(as[TwitterApi]) { twitterApi: TwitterApi =>
-              val twitterHandler = new TwitterCommunicator(twitterApi,Http())
+              val twitterHandler = new TwitterCommunicator(twitterApi, Http())
               val questionsActor = actorSystem.actorOf(QuestionsActor.props(AppConfig.questionsURL, AppConfig.authKey, twitterHandler))
               val latestTimeStamp = TimeCache.getLatestTime(tag)
               SaveConfigurationsDB.save(twitterApi, tag, latestTimeStamp.toLong)
@@ -76,6 +72,18 @@ object RestService {
       }
 
     Http().bindAndHandle(routes, config.address, config.port)
+  }
+
+  private def getHtmlToBeRendered = {
+    val listOfRunningBots = SaveConfigurationsDB.getAll().map { a =>
+      s"""<h4 align="center" style="margin-top:5%;font-weight:400">${a.tag}:<a href="https://twitter.com/${a.twitterApi.handler}">${a.twitterApi.handler}</a></h4>"""
+    }.mkString("\n")
+    val updated = html.split("</div>").mkString(listOfRunningBots +
+      """
+        |<h5 align="center" style="margin-top:10%;font-weight:400">Maintained By: <a href="https://www.twitter.com/Internity_learn">InternityFoundation</a></h5>
+      """.stripMargin +
+      "\n </div>")
+    updated
   }
 
   def stop(bindingFuture: Future[ServerBinding])(implicit actorSystem: ActorSystem): Future[Unit] = {
