@@ -42,7 +42,6 @@ class QuestionsActor(http: HttpExt, soUrl: String, key: String, twitterHandler: 
           }
         }
         a.items.map { question =>
-          println(question.owner)
           if (!listOfQuestions.contains(question.question_id)) {
             twitterHandler.formulateTweet(question).map{tweet=>
               log.info(s"Tweet: $tweet")
