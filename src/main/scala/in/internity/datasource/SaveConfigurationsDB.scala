@@ -23,7 +23,8 @@ object SaveConfigurationsDB {
   def save(twitterApi: TwitterApi, tag: String, latestTimeStamp: Long, herokuURL: String): Unit = {
     Try({
       val stmt = connection.createStatement()
-      val query =s"""INSERT INTO twitterNew VALUES ('${twitterApi.consumerKey}','${twitterApi.consumerSecret}','${twitterApi.accessKey}','${twitterApi.accessSecret}','${twitterApi.handler}','$herokuURL','$tag',$latestTimeStamp );"""
+      val query =s"""INSERT INTO twitterNew VALUES ('${twitterApi.consumerKey}','${twitterApi.consumerSecret}','${twitterApi.accessKey}','${twitterApi.accessSecret}','${twitterApi.handler}','$herokuURL',$latestTimeStamp,'$tag');"""
+      println(query)
       val result = stmt.executeUpdate(query)
       stmt.close()
       result
@@ -41,10 +42,11 @@ object SaveConfigurationsDB {
 
       def next() = {
         val twitterApi = TwitterApi(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6))
-        Configuration(twitterApi, rs.getString(7), rs.getDouble(8).toLong)
+        Configuration(twitterApi, rs.getString(8), rs.getDouble(7).toLong)
       }
     }.toStream
     val list = stream.toList
+    println(s"list:::$list")
     rs.close()
     stmt.close()
     list
