@@ -8,11 +8,12 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
+import in.internity.Boot.actorSystem
 import in.internity.TimeCache
 import in.internity.config.AppConfig
 import in.internity.datasource.SaveConfigurationsDB
 import in.internity.models.TwitterApi
-import in.internity.stackoverflow.{Fetch, QuestionsActor}
+import in.internity.stackoverflow.{CallHeroku, Fetch, QuestionsActor}
 import in.internity.twitter.TwitterCommunicator
 import org.json4s.native.Serialization
 import org.json4s.{DefaultFormats, native}
@@ -63,6 +64,9 @@ object RestService {
               SaveConfigurationsDB.save(twitterApi, tag, latestTimeStamp.toLong, herokuURL)
               actorSystem.scheduler.schedule(500 millis, 1 minute) {
                 questionsActor ! Fetch(tag, latestTimeStamp)
+              }
+              actorSystem.scheduler.schedule(500 millis,10 minute) {
+                questionsActor ! CallHeroku(herokuURL)
               }
               complete {
                 "Handler Added"
