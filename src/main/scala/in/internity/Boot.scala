@@ -26,6 +26,7 @@ object Boot extends App {
   implicit val executionContext: ExecutionContextExecutor = actorSystem.dispatcher
 
   val bind = RestService.run()
+
   bind.onComplete(a => println(a.get))
   SaveConfigurationsDB.init()
   SaveConfigurationsDB.getAll().map { conf =>
@@ -37,7 +38,7 @@ object Boot extends App {
       questionsActor ! Fetch(conf.tag, TimeCache.getLatestTime(conf.tag))
     }
     actorSystem.scheduler.schedule(500 millis,10 minute) {
-      questionsActor ! CallHeroku
+      questionsActor ! CallHeroku(conf.url)
     }
   }
 }

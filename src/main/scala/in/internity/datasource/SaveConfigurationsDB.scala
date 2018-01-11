@@ -14,14 +14,16 @@ object SaveConfigurationsDB {
 
   def init() = {
     val stmt = connection.createStatement()
-    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS twitter ( consumerkey TEXT, consumersecret TEXT, accesskey TEXT, accesssecret TEXT, handle TEXT, tag TEXT, latestTimeStamp DECIMAL(10,0));")
+    stmt.executeUpdate(
+      "CREATE TABLE IF NOT EXISTS twitterNew ( consumerkey TEXT, consumersecret TEXT, accesskey TEXT, accesssecret TEXT, handle TEXT Primary Key, tag TEXT, latestTimeStamp DECIMAL(10,0),herokuURL TEXT );"
+    )
     stmt.close()
   }
 
-  def save(twitterApi: TwitterApi, tag: String, latestTimeStamp: Long): Unit = {
+  def save(twitterApi: TwitterApi, tag: String, latestTimeStamp: Long, herokuURL: String): Unit = {
     Try({
       val stmt = connection.createStatement()
-      val query =s"""INSERT INTO twitter VALUES ('${twitterApi.consumerKey}','${twitterApi.consumerSecret}','${twitterApi.accessKey}','${twitterApi.accessSecret}','${twitterApi.handler}','$tag',$latestTimeStamp);"""
+      val query =s"""INSERT INTO twitterNew VALUES ('${twitterApi.consumerKey}','${twitterApi.consumerSecret}','${twitterApi.accessKey}','${twitterApi.accessSecret}','${twitterApi.handler}','$tag',$latestTimeStamp ,$herokuURL);"""
       val result = stmt.executeUpdate(query)
       stmt.close()
       result
@@ -33,13 +35,13 @@ object SaveConfigurationsDB {
 
   def getAll(): List[Configuration] = {
     val stmt = connection.createStatement()
-    val rs = stmt.executeQuery("SELECT * FROM twitter;")
+    val rs = stmt.executeQuery("SELECT * FROM twitterNew;")
     val stream = new Iterator[Configuration] {
       def hasNext = rs.next()
 
       def next() = {
         val twitterApi = TwitterApi(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5))
-        Configuration(twitterApi, rs.getString(6), rs.getDouble(7).toLong)
+        Configuration(twitterApi, rs.getString(6), rs.getDouble(7).toLong, rs.getString(8))
       }
     }.toStream
     val list = stream.toList

@@ -9,6 +9,7 @@ import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.Materializer
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import in.internity.TimeCache
+import in.internity.config.AppConfig
 import in.internity.models.Questions
 import in.internity.twitter.TwitterCommunicator
 import org.json4s.native.Serialization
@@ -54,8 +55,8 @@ class QuestionsActor(http: HttpExt, soUrl: String, key: String, twitterHandler: 
         }
       }
 
-    case CallHeroku=>
-      http.singleRequest(HttpRequest(uri = "https://internity-bots.herokuapp.com/")).onComplete({a=>
+    case CallHeroku(url)=>
+      http.singleRequest(HttpRequest(uri = url)).onComplete({ a=>
         println("Called heroku Responded with:",a.get.status)
       })
   }
@@ -105,4 +106,4 @@ object QuestionsActor {
 }
 
 case class Fetch(tag: String, fromDate: Double)
-case object CallHeroku
+case class CallHeroku(url:String)

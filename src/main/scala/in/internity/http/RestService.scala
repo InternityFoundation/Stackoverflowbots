@@ -52,14 +52,15 @@ object RestService {
         get {
           complete("I am alive ! ! Heahahaha :D")
         }
-      } ~ path("createBot" / Segment) { tag: String =>
+      } ~ path("createBot" / "tag" / Segment / "appName" / Segment) { (tag: String, herokuAppName: String) =>
         post {
           decodeRequest {
             entity(as[TwitterApi]) { twitterApi: TwitterApi =>
               val twitterHandler = new TwitterCommunicator(twitterApi, Http())
               val questionsActor = actorSystem.actorOf(QuestionsActor.props(AppConfig.questionsURL, AppConfig.authKey, twitterHandler))
               val latestTimeStamp = TimeCache.getLatestTime(tag)
-              SaveConfigurationsDB.save(twitterApi, tag, latestTimeStamp.toLong)
+              val herokuURL =s"""https://$herokuAppName.herokuapp.com/"""
+              SaveConfigurationsDB.save(twitterApi, tag, latestTimeStamp.toLong, herokuURL)
               actorSystem.scheduler.schedule(500 millis, 1 minute) {
                 questionsActor ! Fetch(tag, latestTimeStamp)
               }
