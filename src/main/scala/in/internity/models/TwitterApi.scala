@@ -9,7 +9,8 @@ case class TwitterApi(
                        consumerSecret: String,
                        accessKey: String,
                        accessSecret: String,
-                       handler: String
+                       handler: String,
+                       herokuURL: String
                      )
 
-case class Configuration(twitterApi: TwitterApi, tag: String, lastTimestamp: Long, herokuURL: String)
+case class Configuration(twitterApi: TwitterApi, tag: String, lastTimestamp: Long)

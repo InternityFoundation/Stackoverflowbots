@@ -38,7 +38,7 @@ object Boot extends App {
       questionsActor ! Fetch(conf.tag, TimeCache.getLatestTime(conf.tag))
     }
     actorSystem.scheduler.schedule(500 millis,10 minute) {
-      questionsActor ! CallHeroku(conf.herokuURL)
+      questionsActor ! CallHeroku(conf.twitterApi.herokuURL)
     }
   }
 }
