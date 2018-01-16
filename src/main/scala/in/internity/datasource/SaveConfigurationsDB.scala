@@ -59,7 +59,7 @@ object SaveConfigurationsDB {
   def saveSlack(slack: Slack,tag:String,latestTimeStamp:Double)={
     Try({
       val stmt = connection.createStatement()
-      val query =s"""INSERT INTO Slack VALUES ('${slack.channelName}','${slack.apiToken}','$tag',$latestTimeStamp);"""
+      val query =s"""INSERT INTO Slack VALUES ('${slack.channelName}','${slack.apiToken}',$latestTimeStamp,'$tag');"""
       println(query)
       val result = stmt.executeUpdate(query)
       stmt.close()
@@ -78,7 +78,7 @@ object SaveConfigurationsDB {
 
       def next() = {
         (Slack(rs.getString(1),rs.getString(2)),
-          rs.getString(3),rs.getDouble(4))
+          rs.getString(4),rs.getDouble(3))
       }
     }.toStream
     val list = stream.toList

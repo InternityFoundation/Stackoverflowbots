@@ -51,6 +51,7 @@ object Boot extends App {
       actorSystem.scheduler.schedule(500 millis, 1 minute) {
         questionsActor ! Fetch(tag, TimeCacheSlack.getLatestTime(tag))
       }
+
   }
 }
 

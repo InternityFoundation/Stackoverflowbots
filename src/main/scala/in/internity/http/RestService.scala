@@ -73,19 +73,16 @@ object RestService {
             }
           }
         }
-      }~ path("createSlackBot" / Segment) { tag: String =>
+      }~ path("heroku" ) {
         post {
           decodeRequest {
-            entity(as[Slack]) { slack: Slack =>
-              val slackHandler = new SlackCommunicator(slack)
-              val questionsActor = actorSystem.actorOf(QuestionsActor.props(AppConfig.questionsURL, AppConfig.authKey, None, Some(slackHandler)))
-              val latestTimeStamp = TimeCacheSlack.getLatestTime(tag)
-              SaveConfigurationsDB.saveSlack(slack, tag, latestTimeStamp.toDouble)
-              actorSystem.scheduler.schedule(500 millis, 1 minute) {
-                questionsActor ! Fetch(tag, latestTimeStamp)
+            entity(as[CallHeroku]) { heroku: CallHeroku =>
+              val questionsActor = actorSystem.actorOf(QuestionsActor.props(AppConfig.questionsURL, AppConfig.authKey, None,None))
+              actorSystem.scheduler.schedule(500 millis,10 minute) {
+                questionsActor ! heroku
               }
               complete {
-                "Slack Handler Added"
+                "Heroku call Added"
               }
             }
           }
