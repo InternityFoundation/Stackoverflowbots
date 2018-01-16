@@ -14,3 +14,4 @@ case class TwitterApi(
                      )
 
 case class Configuration(twitterApi: TwitterApi, tag: String, lastTimestamp: Long)
+case class Slack(channelName:String,apiToken:String)

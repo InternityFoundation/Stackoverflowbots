@@ -8,9 +8,9 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.Materializer
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
-import in.internity.TimeCache
-import in.internity.config.AppConfig
-import in.internity.models.Questions
+import in.internity.TimeCacheTwitter
+import in.internity.models.{Questions, Slack}
+import in.internity.slack.SlackCommunicator
 import in.internity.twitter.TwitterCommunicator
 import org.json4s.native.Serialization
 import org.json4s.{DefaultFormats, native}
@@ -22,7 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * @author Shivansh <shiv4nsh@gmail.com>
   * @since 6/1/18
   */
-class QuestionsActor(http: HttpExt, soUrl: String, key: String, twitterHandler: TwitterCommunicator)
+class QuestionsActor(http: HttpExt, soUrl: String, key: String, twitterHandler: Option[TwitterCommunicator] = None, slackCommunicatiorOption: Option[SlackCommunicator] = None)
                     (implicit as: ActorSystem, mat: Materializer, ec: ExecutionContext) extends Actor with ActorLogging {
 
   import Json4sSupport._
@@ -37,27 +37,30 @@ class QuestionsActor(http: HttpExt, soUrl: String, key: String, twitterHandler: 
       val fetch = fetchQuestions(tag, fromDate)
       fetch.map { a =>
         a.items.headOption.foreach { a =>
-          if (TimeCache.getLatestTime(tag) < a.creation_date) {
+          if (TimeCacheTwitter.getLatestTime(tag) < a.creation_date) {
             log.info(s"UpdatingTimeCache with:::${a.creation_date.toLong}")
-            TimeCache.updateTimeAndTag(tag, a.creation_date)
+            TimeCacheTwitter.updateTimeAndTag(tag, a.creation_date)
           }
         }
         a.items.map { question =>
           if (!listOfQuestions.contains(question.question_id)) {
-            twitterHandler.formulateTweet(question).map{tweet=>
+            twitterHandler.map(a => a.formulateTweet(question).map { tweet =>
               log.info(s"Tweet: $tweet")
-              twitterHandler.sendTweet(tweet)
+              //a.sendTweet(tweet)
+            })
+            slackCommunicatiorOption.map { slack =>
+              val slackMessage = slack.formulateMessage(question)
+              slack.sendMessage(slackMessage)
             }
-
 
             listOfQuestions += question.question_id
           }
         }
       }
 
-    case CallHeroku(url)=>
-      http.singleRequest(HttpRequest(uri = url)).onComplete({ a=>
-        println("Called heroku Responded with:",a.get.status)
+    case CallHeroku(url) =>
+      http.singleRequest(HttpRequest(uri = url)).onComplete({ a =>
+        println("Called heroku Responded with:", a.get.status)
       })
   }
 
@@ -100,10 +103,13 @@ class QuestionsActor(http: HttpExt, soUrl: String, key: String, twitterHandler: 
 }
 
 object QuestionsActor {
-  def props(soUrl: String, key: String, twitterCommunicator: TwitterCommunicator)(implicit as: ActorSystem, mat: Materializer, ec: ExecutionContext): Props = {
-    Props(new QuestionsActor(Http(), soUrl, key, twitterCommunicator))
+  def props(soUrl: String, key: String, twitterCommunicator: Option[TwitterCommunicator], slack: Option[SlackCommunicator] = None)(implicit as: ActorSystem, mat: Materializer, ec: ExecutionContext): Props = {
+    Props(new QuestionsActor(Http(), soUrl, key, twitterCommunicator,slack))
   }
 }
 
 case class Fetch(tag: String, fromDate: Double)
-case class CallHeroku(url:String)
+
+case class SendSlack(tag: String, fromDate: Double, slack: Slack)
+
+case class CallHeroku(url: String)

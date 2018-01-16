@@ -8,11 +8,11 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
-import in.internity.Boot.actorSystem
-import in.internity.TimeCache
+import in.internity.{TimeCacheSlack, TimeCacheTwitter}
 import in.internity.config.AppConfig
 import in.internity.datasource.SaveConfigurationsDB
-import in.internity.models.TwitterApi
+import in.internity.models.{Slack, TwitterApi}
+import in.internity.slack.SlackCommunicator
 import in.internity.stackoverflow.{CallHeroku, Fetch, QuestionsActor}
 import in.internity.twitter.TwitterCommunicator
 import org.json4s.native.Serialization
@@ -58,9 +58,9 @@ object RestService {
           decodeRequest {
             entity(as[TwitterApi]) { twitterApi: TwitterApi =>
               val twitterHandler = new TwitterCommunicator(twitterApi, Http())
-              val questionsActor = actorSystem.actorOf(QuestionsActor.props(AppConfig.questionsURL, AppConfig.authKey, twitterHandler))
-              val latestTimeStamp = TimeCache.getLatestTime(tag)
-              SaveConfigurationsDB.save(twitterApi, tag, latestTimeStamp.toLong,twitterApi.herokuURL)
+              val questionsActor = actorSystem.actorOf(QuestionsActor.props(AppConfig.questionsURL, AppConfig.authKey, Some(twitterHandler)))
+              val latestTimeStamp = TimeCacheTwitter.getLatestTime(tag)
+              SaveConfigurationsDB.saveTwitter(twitterApi, tag, latestTimeStamp.toLong,twitterApi.herokuURL)
               actorSystem.scheduler.schedule(500 millis, 1 minute) {
                 questionsActor ! Fetch(tag, latestTimeStamp)
               }
@@ -73,13 +73,30 @@ object RestService {
             }
           }
         }
+      }~ path("createSlackBot" / Segment) { tag: String =>
+        post {
+          decodeRequest {
+            entity(as[Slack]) { slack: Slack =>
+              val slackHandler = new SlackCommunicator(slack)
+              val questionsActor = actorSystem.actorOf(QuestionsActor.props(AppConfig.questionsURL, AppConfig.authKey, None, Some(slackHandler)))
+              val latestTimeStamp = TimeCacheSlack.getLatestTime(tag)
+              SaveConfigurationsDB.saveSlack(slack, tag, latestTimeStamp.toDouble)
+              actorSystem.scheduler.schedule(500 millis, 1 minute) {
+                questionsActor ! Fetch(tag, latestTimeStamp)
+              }
+              complete {
+                "Slack Handler Added"
+              }
+            }
+          }
+        }
       }
 
     Http().bindAndHandle(routes, config.address, config.port)
   }
 
   private def getHtmlToBeRendered = {
-    val listOfRunningBots = SaveConfigurationsDB.getAll().map { a =>
+    val listOfRunningBots = SaveConfigurationsDB.getAllTwitter().map { a =>
       s"""<h4 align="center" style="margin-top:5%;font-weight:400">${a.tag}:<a href="https://twitter.com/${a.twitterApi.handler}">${a.twitterApi.handler}</a></h4>"""
     }.mkString("\n")
     val updated = html.split("</div>").mkString(listOfRunningBots +

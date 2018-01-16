@@ -19,8 +19,9 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "9.3-1102-jdbc41",
   "org.apache.commons" % "commons-dbcp2" % "2.0.1",
   "net.ruippeixotog" %% "scala-scraper" % "2.0.0",
+  "com.flyberrycapital" %% "scala-slack" % "0.3.1",
   "org.scalatest" %% "scalatest" % "3.0.0" % Test,
-  "org.mockito" % "mockito-core" % "2.8.47" % Test,
+  "org.mockito" % "mockito-core" % "2.8.47" % Test
 )
 
 dependencyOverrides ++= Seq(
